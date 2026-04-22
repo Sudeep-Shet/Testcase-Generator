@@ -1,0 +1,735 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Table Test Case Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3d;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --text: #e8e8f0;
+    --text-muted: #6b6b8a;
+    --pass: #00e676;
+    --fail: #ff1744;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; top: -50%; left: -20%;
+    width: 60%; height: 60%;
+    background: radial-gradient(ellipse, rgba(0,229,255,0.05) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed; bottom: -30%; right: -10%;
+    width: 50%; height: 50%;
+    background: radial-gradient(ellipse, rgba(124,58,237,0.06) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 1.4rem 3rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 1rem;
+    position: relative; z-index: 10;
+  }
+  .logo-mark {
+    width: 36px; height: 36px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+  header h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; }
+  header h1 span { color: var(--accent); }
+  .subtitle { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+
+  /* ── LAYOUT ── */
+  .main { max-width: 1300px; margin: 0 auto; padding: 2.5rem 2rem; position: relative; z-index: 10; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; margin-bottom: 2.5rem; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+  .tab-btn {
+    flex: 1; padding: 1rem;
+    background: transparent; border: none; border-right: 1px solid var(--border);
+    color: var(--text-muted); font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .tab-btn:last-child { border-right: none; }
+  .tab-btn.active { color: var(--bg); background: var(--accent); }
+  .tab-btn.t2.active { background: var(--accent2); }
+  .tab-btn.t3.active { background: var(--accent3); }
+  .tab-icon { display: block; font-size: 1.3rem; margin-bottom: 3px; }
+  .tab-label { font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  /* ── PANELS ── */
+  .panel { display: none; animation: fadeIn 0.3s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── PANEL HEADER ── */
+  .panel-header { margin-bottom: 1.8rem; }
+  .panel-header h2 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em; }
+  .panel-header p { color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 0.68rem; margin-top: 0.4rem; line-height: 1.6; }
+
+  /* ── DECISION INFO ── */
+  .decision-info { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.3rem; margin-bottom: 1.5rem; }
+  .decision-info h3 { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.6rem; color: var(--text-muted); }
+  .condition-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .condition-chip { font-family: 'Space Mono', monospace; font-size: 0.62rem; padding: 3px 9px; border-radius: 4px; background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+
+  /* ── INPUT FORM CARD ── */
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.8rem 2rem;
+    margin-bottom: 1.5rem;
+  }
+  .form-card-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem; color: var(--text-muted);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 1.3rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .form-card-title::before {
+    content: '';
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+  }
+  .form-card-title.o::before { background: var(--accent2); }
+  .form-card-title.p::before { background: var(--accent3); }
+
+  .input-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .field-group { display: flex; flex-direction: column; gap: 0.4rem; flex: 1; min-width: 140px; }
+  label { font-family: 'Space Mono', monospace; font-size: 0.63rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  input[type="number"], input[type="text"] {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 0.75rem 1rem;
+    border-radius: 8px; font-family: 'Space Mono', monospace;
+    font-size: 0.95rem; width: 100%; transition: all 0.2s; outline: none;
+  }
+  input[type="number"]:focus, input[type="text"]:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,255,0.1);
+  }
+  input.o:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(255,107,53,0.1); }
+  input.p:focus { border-color: var(--accent3); box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+
+  .input-hint { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── BUTTON ROW ── */
+  .btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+
+  .btn {
+    padding: 0.75rem 1.6rem; border: none; border-radius: 8px;
+    font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.05em; text-transform: uppercase;
+    transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .btn-primary { background: var(--accent); color: var(--bg); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,229,255,0.3); }
+  .btn-primary.o { background: var(--accent2); }
+  .btn-primary.o:hover { box-shadow: 0 8px 24px rgba(255,107,53,0.3); }
+  .btn-primary.p { background: var(--accent3); }
+  .btn-primary.p:hover { box-shadow: 0 8px 24px rgba(124,58,237,0.3); }
+
+  .btn-secondary {
+    background: transparent; color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.05); }
+  .btn-secondary.o:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(255,107,53,0.05); }
+  .btn-secondary.p:hover { border-color: var(--accent3); color: var(--accent3); background: rgba(124,58,237,0.05); }
+
+  /* ── VALIDATION ERROR ── */
+  .error-msg {
+    background: rgba(255,23,68,0.08); border: 1px solid rgba(255,23,68,0.25);
+    border-radius: 8px; padding: 0.7rem 1rem;
+    font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--fail);
+    margin-bottom: 1rem; display: none;
+  }
+  .error-msg.show { display: block; }
+
+  /* ── RESULTS ── */
+  .results-section { margin-top: 0.5rem; }
+  .results-empty {
+    text-align: center; padding: 3.5rem 2rem;
+    color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 0.75rem;
+    border: 1px dashed var(--border); border-radius: 12px;
+    line-height: 2;
+  }
+  .results-empty .big { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; opacity: 0.4; }
+
+  .results-title {
+    font-family: 'Space Mono', monospace; font-size: 0.65rem;
+    color: var(--text-muted); letter-spacing: 0.15em; text-transform: uppercase;
+    margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem;
+  }
+  .results-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .counter {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-family: 'Space Mono', monospace; font-size: 0.65rem;
+    color: var(--text-muted); padding: 3px 9px;
+    border: 1px solid var(--border); border-radius: 20px;
+  }
+  .counter span { font-weight: 700; color: var(--accent); }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-family: 'Space Mono', monospace; font-size: 0.72rem; }
+  thead tr { background: var(--surface2); }
+  th { padding: 0.8rem 1rem; text-align: left; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 0.7rem 1rem; border-bottom: 1px solid rgba(42,42,61,0.5); color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .highlight-row td { background: rgba(0,229,255,0.04); }
+  .highlight-row.o td { background: rgba(255,107,53,0.04); }
+  .highlight-row.p td { background: rgba(124,58,237,0.04); }
+
+  /* ── BADGES ── */
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .b-pass { background: rgba(0,230,118,0.15); color: var(--pass); border: 1px solid rgba(0,230,118,0.3); }
+  .b-inv  { background: rgba(255,23,68,0.12);  color: var(--fail); border: 1px solid rgba(255,23,68,0.3); }
+  .b-scl  { background: rgba(0,229,255,0.12);  color: var(--accent); border: 1px solid rgba(0,229,255,0.3); }
+  .b-iso  { background: rgba(255,107,53,0.12); color: var(--accent2); border: 1px solid rgba(255,107,53,0.3); }
+  .b-eq   { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
+  .b-user { background: rgba(0,229,255,0.2); color: var(--accent); border: 1px solid rgba(0,229,255,0.5); }
+
+  .tc-id { color: var(--text-muted); font-size: 0.65rem; }
+  .clear-btn {
+    margin-left: auto; background: transparent;
+    border: 1px solid var(--border); color: var(--text-muted);
+    font-family: 'Space Mono', monospace; font-size: 0.6rem;
+    padding: 3px 12px; border-radius: 6px; cursor: pointer;
+    letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.2s;
+  }
+  .clear-btn:hover { border-color: var(--fail); color: var(--fail); background: rgba(255,23,68,0.06); }
+  .btn-reset {
+    background: transparent; color: var(--fail);
+    border: 1px solid rgba(255,23,68,0.35); margin-left: auto;
+  }
+  .btn-reset:hover { background: rgba(255,23,68,0.08); border-color: var(--fail); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(255,23,68,0.15); }
+  .user-tag { font-size: 0.55rem; letter-spacing: 0.06em; color: var(--accent); text-transform: uppercase; margin-left: 4px; vertical-align: middle; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    header { padding: 1rem 1.2rem; }
+    .main { padding: 1.5rem 0.8rem; }
+    .tabs { flex-direction: column; }
+    .tab-btn { border-right: none; border-bottom: 1px solid var(--border); }
+    .form-card { padding: 1.2rem; }
+    .btn-row { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark"></div>
+  <div>
+    <h1>Decision Table <span>TestGen</span></h1>
+    <div class="subtitle">Decision-based test case generator · Triangle · Next Date · Sale Commission</div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tri',this)">
+      <span class="tab-icon">△</span><span class="tab-label">Triangle</span>
+    </button>
+    <button class="tab-btn t2" onclick="switchTab('nd',this)">
+      <span class="tab-icon">📅</span><span class="tab-label">Next Date</span>
+    </button>
+    <button class="tab-btn t3" onclick="switchTab('cm',this)">
+      <span class="tab-icon">💰</span><span class="tab-label">Sale Commission</span>
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════ TRIANGLE ══════════════════════════════ -->
+  <div id="panel-tri" class="panel active">
+    <div class="panel-header">
+      <h2>Triangle Classification</h2>
+      <p>// Enter three side values to generate the decision table test cases<br>
+         // Boundary variants (BVA) are auto-derived from your input</p>
+    </div>
+
+    <div class="decision-info">
+      <h3>Decision Conditions</h3>
+      <div class="condition-list">
+        <span class="condition-chip">C1: a + b &gt; c</span>
+        <span class="condition-chip">C2: a + c &gt; b</span>
+        <span class="condition-chip">C3: b + c &gt; a</span>
+        <span class="condition-chip">C4: a == b</span>
+        <span class="condition-chip">C5: b == c</span>
+        <span class="condition-chip">C6: a == c</span>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-title">Enter Triangle Sides</div>
+      <div class="input-row">
+        <div class="field-group">
+          <label>Side A</label>
+          <input type="number" id="tri-a" placeholder="e.g. 3" min="1" step="1">
+          <span class="input-hint">positive integer</span>
+        </div>
+        <div class="field-group">
+          <label>Side B</label>
+          <input type="number" id="tri-b" placeholder="e.g. 4" min="1" step="1">
+          <span class="input-hint">positive integer</span>
+        </div>
+        <div class="field-group">
+          <label>Side C</label>
+          <input type="number" id="tri-c" placeholder="e.g. 5" min="1" step="1">
+          <span class="input-hint">positive integer</span>
+        </div>
+      </div>
+      <div class="error-msg" id="tri-err">⚠ Please enter valid positive integers for all three sides.</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitTriangle()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Generate Test Cases
+        </button>
+        <button class="btn btn-secondary" onclick="autoTriangle()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+          Auto Generate
+        </button>
+        <button class="btn btn-reset" onclick="clearTable('tri')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Reset Table
+        </button>
+      </div>
+    </div>
+
+    <div class="results-section" id="tri-res">
+      <div class="results-empty">
+        <span class="big">△</span>
+        Enter side values above and click <strong>Generate Test Cases</strong><br>
+        or use <strong>Auto Generate</strong> for random inputs
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ NEXT DATE ══════════════════════════════ -->
+  <div id="panel-nd" class="panel">
+    <div class="panel-header">
+      <h2>Next Date Problem</h2>
+      <p>// Enter a date (day / month / year) to generate the decision table test cases<br>
+         // Edge cases for month-end, year-end and leap year are automatically included</p>
+    </div>
+
+    <div class="decision-info">
+      <h3>Decision Conditions</h3>
+      <div class="condition-list">
+        <span class="condition-chip">C1: Month in {1,3,5,7,8,10,12} (31 days)</span>
+        <span class="condition-chip">C2: Month in {4,6,9,11} (30 days)</span>
+        <span class="condition-chip">C3: Month == 2 (February)</span>
+        <span class="condition-chip">C4: Day &lt; EOM</span>
+        <span class="condition-chip">C5: Day == EOM</span>
+        <span class="condition-chip">C6: Dec 31</span>
+        <span class="condition-chip">C7: Leap Year</span>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-title o">Enter Date</div>
+      <div class="input-row">
+        <div class="field-group">
+          <label>Day</label>
+          <input type="number" class="o" id="nd-d" placeholder="e.g. 15" min="1" max="31" step="1">
+          <span class="input-hint">1 – 31</span>
+        </div>
+        <div class="field-group">
+          <label>Month</label>
+          <input type="number" class="o" id="nd-m" placeholder="e.g. 6" min="1" max="12" step="1">
+          <span class="input-hint">1 – 12</span>
+        </div>
+        <div class="field-group">
+          <label>Year</label>
+          <input type="number" class="o" id="nd-y" placeholder="e.g. 2024" min="1" step="1">
+          <span class="input-hint">positive year</span>
+        </div>
+      </div>
+      <div class="error-msg" id="nd-err">⚠ Please enter a valid day (1–31), month (1–12), and positive year.</div>
+      <div class="btn-row">
+        <button class="btn btn-primary o" onclick="submitNextDate()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Generate Test Cases
+        </button>
+        <button class="btn btn-secondary o" onclick="autoNextDate()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+          Auto Generate
+        </button>
+        <button class="btn btn-reset" onclick="clearTable('nd')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Reset Table
+        </button>
+      </div>
+    </div>
+
+    <div class="results-section" id="nd-res">
+      <div class="results-empty">
+        <span class="big">📅</span>
+        Enter a date above and click <strong>Generate Test Cases</strong><br>
+        or use <strong>Auto Generate</strong> for random inputs
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ COMMISSION ══════════════════════════════ -->
+  <div id="panel-cm" class="panel">
+    <div class="panel-header">
+      <h2>Sale Commission</h2>
+      <p>// Enter a sales amount to generate the decision table test cases<br>
+         // Boundary values at $0, $1000, and $1800 are auto-included</p>
+    </div>
+
+    <div class="decision-info">
+      <h3>Decision Conditions &amp; Commission Tiers</h3>
+      <div class="condition-list">
+        <span class="condition-chip">C1: Sales ≤ 0 → Invalid</span>
+        <span class="condition-chip">C2: 0 &lt; Sales ≤ $1,000 → 10%</span>
+        <span class="condition-chip">C3: $1,000 &lt; Sales ≤ $1,800 → $100 + 15% of (Sales - $1,000)</span>
+        <span class="condition-chip">C4: Sales &gt; $1,800 → $220 + 20% of (Sales - $1,800)</span>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-title p">Enter Sales Amount</div>
+      <div class="input-row">
+        <div class="field-group" style="max-width:280px">
+          <label>Sales Amount ($)</label>
+          <input type="number" class="p" id="cm-s" placeholder="e.g. 1500" step="1">
+          <span class="input-hint">any numeric value (negative = invalid)</span>
+        </div>
+      </div>
+      <div class="error-msg" id="cm-err">⚠ Please enter a numeric sales amount.</div>
+      <div class="btn-row">
+        <button class="btn btn-primary p" onclick="submitCommission()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Generate Test Cases
+        </button>
+        <button class="btn btn-secondary p" onclick="autoCommission()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+          Auto Generate
+        </button>
+        <button class="btn btn-reset" onclick="clearTable('cm')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Reset Table
+        </button>
+      </div>
+    </div>
+
+    <div class="results-section" id="cm-res">
+      <div class="results-empty">
+        <span class="big">💰</span>
+        Enter a sales amount above and click <strong>Generate Test Cases</strong><br>
+        or use <strong>Auto Generate</strong> for random inputs
+      </div>
+    </div>
+  </div>
+</div><!-- /.main -->
+
+<script>
+function switchTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  el.classList.add('active');
+}
+const TF = v =>
+  v === true  ? '<span style="color:#00e676;font-weight:700">T</span>' :
+  v === false ? '<span style="color:#ff1744;font-weight:700">F</span>' :
+                '<span style="color:#6b6b8a">\u2013</span>';
+const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+function showErr(id, show) { document.getElementById(id).classList.toggle('show', show); }
+
+// Per-panel row stores
+const store = { tri: [], nd: [], cm: [] };
+
+// ── CLEAR ──────────────────────────────────────────────────────────────────
+function clearTable(panel) {
+  store[panel] = [];
+  const emp = {
+    tri: '<div class="results-empty"><span class="big">\u25b3</span>Enter side values above and click <strong>Generate Test Cases</strong><br>or use <strong>Auto Generate</strong> for random inputs</div>',
+    nd:  '<div class="results-empty"><span class="big">\U0001f4c5</span>Enter a date above and click <strong>Generate Test Cases</strong><br>or use <strong>Auto Generate</strong> for random inputs</div>',
+    cm:  '<div class="results-empty"><span class="big">\U0001f4b0</span>Enter a sales amount above and click <strong>Generate Test Cases</strong><br>or use <strong>Auto Generate</strong> for random inputs</div>',
+  };
+  document.getElementById(panel + '-res').innerHTML = emp[panel];
+}
+
+// ── TRIANGLE ───────────────────────────────────────────────────────────────
+function classifyTriangle(a, b, c) {
+  if (!Number.isInteger(a)||!Number.isInteger(b)||!Number.isInteger(c)) return 'Invalid input';
+  if (a<=0||b<=0||c<=0) return 'Non-positive side';
+  if (a+b<=c||a+c<=b||b+c<=a) return 'Not a triangle';
+  if (a===b&&b===c) return 'Equilateral';
+  if (a===b||b===c||a===c) return 'Isosceles';
+  return 'Scalene';
+}
+function triBadge(r) {
+  if (r==='Equilateral') return '<span class="badge b-eq">Equilateral</span>';
+  if (r==='Isosceles')   return '<span class="badge b-iso">Isosceles</span>';
+  if (r==='Scalene')     return '<span class="badge b-scl">Scalene</span>';
+  return '<span class="badge b-inv">Invalid</span>';
+}
+function buildTriangleCases(ua, ub, uc, isAuto) {
+  if (!isAuto) return [{ a:ua, b:ub, c:uc, note:'User input', user:true }];
+  const base = Math.max(ua,ub,uc);
+  return [
+    { a:ua,     b:ub,     c:uc,      note:'Auto input \u2605', user:true },
+    { a:ua,     b:ua,     c:ua,      note:'All equal (equilateral)' },
+    { a:ua,     b:ua,     c:ub,      note:'a = b (isosceles)' },
+    { a:ua,     b:ub,     c:ua,      note:'a = c (isosceles)' },
+    { a:ub,     b:uc,     c:ub,      note:'b = c (isosceles)' },
+    { a:ua,     b:ub,     c:ua+ub,   note:'a+b = c (degenerate, invalid)' },
+    { a:ua,     b:ub,     c:ua+ub+1, note:'a+b < c (invalid)' },
+    { a:1,      b:ub,     c:uc,      note:'a = 1 (min positive)' },
+    { a:0,      b:ub,     c:uc,      note:'a = 0 (invalid)' },
+    { a:-1,     b:ub,     c:uc,      note:'a = -1 (negative, invalid)' },
+    { a:ua+1,   b:ua+1,   c:ua+1,    note:'a+1 equilateral variant' },
+    { a:base,   b:base+1, c:base+2,  note:'Consecutive sides (scalene)' },
+    { a:base*2, b:base*2, c:base*2,  note:'Large equilateral' },
+    { a:ua,     b:1,      c:ua+2,    note:'Very small middle side' },
+  ];
+}
+function triRowHTML(tc, idx) {
+  const {a,b,c,note,user} = tc;
+  const r = classifyTriangle(a,b,c);
+  const v = a>0&&b>0&&c>0;
+  return `<tr class="${user?'highlight-row':''}">
+    <td class="tc-id">TC${String(idx).padStart(2,'0')}${user?'<span class="user-tag">\u2605</span>':''}</td>
+    <td>${a}</td><td>${b}</td><td>${c}</td>
+    <td>${TF(v?a+b>c:null)}</td><td>${TF(v?a+c>b:null)}</td><td>${TF(v?b+c>a:null)}</td>
+    <td>${TF(a===b)}</td><td>${TF(b===c)}</td><td>${TF(a===c)}</td>
+    <td style="color:var(--text-muted);font-size:0.67rem;white-space:nowrap">${note}</td>
+    <td>${triBadge(r)} <span style="color:var(--text-muted);font-size:0.63rem">${r}</span></td>
+  </tr>`;
+}
+function submitTriangle() {
+  const a=parseInt(document.getElementById('tri-a').value);
+  const b=parseInt(document.getElementById('tri-b').value);
+  const c=parseInt(document.getElementById('tri-c').value);
+  if (isNaN(a)||isNaN(b)||isNaN(c)) { showErr('tri-err',true); return; }
+  showErr('tri-err',false);
+  store.tri.push(...buildTriangleCases(a,b,c,false));
+  renderTriangleTable();
+}
+function autoTriangle() {
+  const a=rand(1,15), b=rand(1,15), c=rand(1,15);
+  document.getElementById('tri-a').value=a;
+  document.getElementById('tri-b').value=b;
+  document.getElementById('tri-c').value=c;
+  showErr('tri-err',false);
+  store.tri = buildTriangleCases(a,b,c,true);
+  renderTriangleTable();
+}
+function renderTriangleTable() {
+  const rows = store.tri;
+  if (!rows.length) return;
+  let h = `<div class="results-title">Decision Table \u2014 Triangle Classification
+    <span class="counter">Total: <span>${rows.length}</span></span>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th>TC#</th><th>a</th><th>b</th><th>c</th>
+      <th>C1: a+b&gt;c</th><th>C2: a+c&gt;b</th><th>C3: b+c&gt;a</th>
+      <th>C4: a=b</th><th>C5: b=c</th><th>C6: a=c</th>
+      <th>Test Scenario</th><th>Expected Output</th>
+    </tr></thead><tbody>`;
+  rows.forEach((tc,i) => { h += triRowHTML(tc, i+1); });
+  h += '</tbody></table></div>';
+  document.getElementById('tri-res').innerHTML = h;
+}
+
+// ── NEXT DATE ──────────────────────────────────────────────────────────────
+const isLeap = y => (y%4===0&&y%100!==0)||y%400===0;
+const eom = (m,y) => { const t=[0,31,28,31,30,31,30,31,31,30,31,30,31]; return (m===2&&isLeap(y))?29:t[m]; };
+function nextDate(d,m,y) {
+  if (m<1||m>12) return 'Invalid month';
+  if (d<1||y<1)  return 'Invalid input';
+  const max=eom(m,y);
+  if (d>max) return 'Invalid day';
+  if (d<max) return (d+1)+'/'+m+'/'+y;
+  if (m===12) return '1/1/'+(y+1);
+  return '1/'+(m+1)+'/'+y;
+}
+function buildNextDateCases(ud,um,uy,isAuto) {
+  if (!isAuto) return [{ d:ud, m:um, y:uy, note:'User input', user:true }];
+  const max=(um>=1&&um<=12&&uy>=1)?eom(um,uy):28;
+  const ly=isLeap(uy);
+  const nlY=ly?uy+1:uy;
+  const lY=ly?uy:uy+4-(uy%4===0?0:uy%4);
+  return [
+    { d:ud,  m:um, y:uy, note:'Auto input \u2605', user:true },
+    { d:Math.max(1,Math.floor(max/2)), m:um, y:uy, note:'Mid-month (day < EOM)' },
+    { d:max, m:um, y:uy, note:'Last day of month (EOM)' },
+    { d:max+1, m:um, y:uy, note:'Day > EOM (invalid)' },
+    { d:0,   m:um, y:uy, note:'Day = 0 (invalid)' },
+    { d:31,  m:12, y:uy, note:'Dec 31 \u2192 New Year' },
+    { d:30,  m:12, y:uy, note:'Dec 30 (mid Dec)' },
+    { d:28,  m:2,  y:nlY, note:'Feb 28 non-leap ('+nlY+')' },
+    { d:28,  m:2,  y:lY,  note:'Feb 28 leap year ('+lY+')' },
+    { d:29,  m:2,  y:lY,  note:'Feb 29 leap year ('+lY+') - EOM' },
+    { d:29,  m:2,  y:nlY, note:'Feb 29 non-leap ('+nlY+') - invalid' },
+    { d:15,  m:0,  y:uy, note:'Month = 0 (invalid)' },
+    { d:15,  m:13, y:uy, note:'Month = 13 (invalid)' },
+    { d:30,  m:4,  y:uy, note:'Apr 30 (EOM 30-day)' },
+    { d:31,  m:1,  y:uy, note:'Jan 31 (EOM 31-day)' },
+  ];
+}
+function ndRowHTML(tc, idx) {
+  const {d,m,y,note,user}=tc;
+  const m31=[1,3,5,7,8,10,12],m30=[4,6,9,11];
+  const r=nextDate(d,m,y);
+  const ok=m>=1&&m<=12&&y>=1;
+  const mx=ok?eom(m,y):0;
+  const c1=ok?TF(m31.includes(m)):TF(null);
+  const c2=ok?TF(m30.includes(m)):TF(null);
+  const c3=ok?TF(m===2):TF(null);
+  const c4=(ok&&d>=1)?TF(d<mx):TF(null);
+  const c5=(ok&&d>=1)?TF(d===mx):TF(null);
+  const c6=(ok&&d>=1)?TF(m===12&&d===31):TF(null);
+  const c7=ok?TF(isLeap(y)):TF(null);
+  const valid=!r.startsWith('Invalid');
+  const badge=valid?'<span class="badge b-pass">'+r+'</span>':'<span class="badge b-inv">Invalid</span>';
+  return `<tr class="${user?'highlight-row o':''}">
+    <td class="tc-id">TC${String(idx).padStart(2,'0')}${user?'<span class="user-tag" style="color:var(--accent2)">\u2605</span>':''}</td>
+    <td>${d}</td><td>${m}</td><td>${y}</td>
+    <td>${c1}</td><td>${c2}</td><td>${c3}</td>
+    <td>${c4}</td><td>${c5}</td><td>${c6}</td><td>${c7}</td>
+    <td style="color:var(--text-muted);font-size:0.67rem;white-space:nowrap">${note}</td>
+    <td>${badge}</td>
+  </tr>`;
+}
+function submitNextDate() {
+  const d=parseInt(document.getElementById('nd-d').value);
+  const m=parseInt(document.getElementById('nd-m').value);
+  const y=parseInt(document.getElementById('nd-y').value);
+  if (isNaN(d)||isNaN(m)||isNaN(y)||d<1||d>31||m<1||m>12||y<1) { showErr('nd-err',true); return; }
+  showErr('nd-err',false);
+  store.nd.push(...buildNextDateCases(d,m,y,false));
+  renderNextDateTable();
+}
+function autoNextDate() {
+  const m=rand(1,12), y=rand(2000,2030), d=rand(1,eom(m,y));
+  document.getElementById('nd-d').value=d;
+  document.getElementById('nd-m').value=m;
+  document.getElementById('nd-y').value=y;
+  showErr('nd-err',false);
+  store.nd = buildNextDateCases(d,m,y,true);
+  renderNextDateTable();
+}
+function renderNextDateTable() {
+  const rows=store.nd;
+  if (!rows.length) return;
+  let h = `<div class="results-title">Decision Table \u2014 Next Date Problem
+    <span class="counter">Total: <span>${rows.length}</span></span>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th>TC#</th><th>Day</th><th>Month</th><th>Year</th>
+      <th>C1: 31-day</th><th>C2: 30-day</th><th>C3: Feb</th>
+      <th>C4: Day&lt;EOM</th><th>C5: Day=EOM</th><th>C6: Dec31</th><th>C7: Leap</th>
+      <th>Test Scenario</th><th>Expected Output</th>
+    </tr></thead><tbody>`;
+  rows.forEach((tc,i) => { h += ndRowHTML(tc, i+1); });
+  h += '</tbody></table></div>';
+  document.getElementById('nd-res').innerHTML = h;
+}
+
+// ── COMMISSION ─────────────────────────────────────────────────────────────
+function calcComm(s) {
+  if (s<=0)    return { label:'Invalid', valid:false, tier:'\u2014' };
+  if (s<=1000) return { label:'$'+(s*0.10).toFixed(2), valid:true, tier:'Tier 1 (10%)' };
+  if (s<=1800) return { label:'$'+(100+(s-1000)*0.15).toFixed(2), valid:true, tier:'Tier 1+2' };
+  return         { label:'$'+(220+(s-1800)*0.20).toFixed(2), valid:true, tier:'Tier 1+2+3' };
+}
+function buildCommissionCases(us, isAuto) {
+  if (!isAuto) return [{ s:us, note:'User input', user:true }];
+  const below=us-1, above=us+1;
+  const fixed=[-1,0,1,999,1000,1001,1799,1800,1801,2500];
+  return [
+    { s:us,   note:'Auto input \u2605', user:true },
+    { s:-1,   note:'Negative (invalid)' },
+    { s:0,    note:'Zero (boundary, invalid)' },
+    { s:1,    note:'Minimum valid ($1)' },
+    { s:999,  note:'Just below Tier 1 max' },
+    { s:1000, note:'Exact Tier 1 boundary ($1000)' },
+    { s:1001, note:'Just into Tier 2' },
+    { s:1799, note:'Just below Tier 2 max' },
+    { s:1800, note:'Exact Tier 2 boundary ($1800)' },
+    { s:1801, note:'Just into Tier 3' },
+    ...(!fixed.includes(below)&&below>1?[{s:below,note:'Auto input - 1'}]:[]),
+    ...(!fixed.includes(above)?[{s:above,note:'Auto input + 1'}]:[]),
+    { s:2500, note:'Mid Tier 3 sample' },
+  ].filter((v,i,a)=>a.findIndex(x=>x.s===v.s)===i);
+}
+function cmRowHTML(tc, idx) {
+  const {s,note,user}=tc;
+  const res=calcComm(s);
+  const c1=TF(s<=0), c2=TF(s>0&&s<=1000), c3=TF(s>1000&&s<=1800), c4=TF(s>1800);
+  const badge=res.valid?'<span class="badge b-pass">'+res.label+'</span>':'<span class="badge b-inv">Invalid</span>';
+  const tier=res.valid?'<code style="font-size:0.65rem;color:var(--accent3)">'+res.tier+'</code>':'<span style="color:var(--text-muted)">\u2014</span>';
+  return `<tr class="${user?'highlight-row p':''}">
+    <td class="tc-id">TC${String(idx).padStart(2,'0')}${user?'<span class="user-tag" style="color:var(--accent3)">\u2605</span>':''}</td>
+    <td>$${Number(s).toLocaleString()}</td>
+    <td>${c1}</td><td>${c2}</td><td>${c3}</td><td>${c4}</td>
+    <td style="color:var(--text-muted);font-size:0.67rem;white-space:nowrap">${note}</td>
+    <td>${tier}</td><td>${badge}</td>
+  </tr>`;
+}
+function submitCommission() {
+  const raw=document.getElementById('cm-s').value;
+  const s=parseFloat(raw);
+  if (raw===''||isNaN(s)) { showErr('cm-err',true); return; }
+  showErr('cm-err',false);
+  store.cm.push(...buildCommissionCases(s,false));
+  renderCommissionTable();
+}
+function autoCommission() {
+  const options=[rand(-200,-1),rand(1,999),rand(1000,1800),rand(1800,5000)];
+  const s=options[rand(0,3)];
+  document.getElementById('cm-s').value=s;
+  showErr('cm-err',false);
+  store.cm = buildCommissionCases(s,true);
+  renderCommissionTable();
+}
+function renderCommissionTable() {
+  const rows=store.cm;
+  if (!rows.length) return;
+  let h = `<div class="results-title">Decision Table \u2014 Sale Commission
+    <span class="counter">Total: <span>${rows.length}</span></span>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th>TC#</th><th>Sales ($)</th>
+      <th>C1: s\u22640</th><th>C2: 0&lt;s\u22641000</th><th>C3: 1000&lt;s\u22641800</th><th>C4: s&gt;1800</th>
+      <th>Test Scenario</th><th>Tier Applied</th><th>Commission</th>
+    </tr></thead><tbody>`;
+  rows.forEach((tc,i) => { h += cmRowHTML(tc, i+1); });
+  h += '</tbody></table></div>';
+  document.getElementById('cm-res').innerHTML = h;
+}
+</script>
+</body>
+</html>
